@@ -8,6 +8,8 @@ enum FlowPhase { menu, battle, reward, gameOver }
 
 enum FighterArchetype { kiting, melee, bruiser }
 
+enum AttackStyle { bowShot, swordSwing, fistSwing }
+
 class CombatStats {
   const CombatStats({
     required this.maxHp,
@@ -73,6 +75,7 @@ class CombatStats {
 class ArchetypeDefinition {
   const ArchetypeDefinition({
     required this.archetype,
+    required this.attackStyle,
     required this.displayName,
     required this.summary,
     required this.weaponLabel,
@@ -86,6 +89,7 @@ class ArchetypeDefinition {
   });
 
   final FighterArchetype archetype;
+  final AttackStyle attackStyle;
   final String displayName;
   final String summary;
   final String weaponLabel;
@@ -102,72 +106,75 @@ const Map<FighterArchetype, ArchetypeDefinition> archetypeCatalog =
     <FighterArchetype, ArchetypeDefinition>{
   FighterArchetype.kiting: ArchetypeDefinition(
     archetype: FighterArchetype.kiting,
-    displayName: 'Hex Ranger',
-    summary: 'Long range kiting fighter with evasive spacing.',
-    weaponLabel: 'Bow',
+    attackStyle: AttackStyle.bowShot,
+    displayName: '마법사',
+    summary: '원거리 마법 공격으로 거리를 유지하며 싸우는 마법사.',
+    weaponLabel: '마법',
     colorValue: 0xFF64B5F6,
     baseStats: CombatStats(
-      maxHp: 82,
-      attackDamage: 11,
-      attackRange: 118,
-      attackCooldown: 1.0,
-      moveSpeed: 104,
-      skillDamage: 25,
-      skillSpeed: 300,
-      skillCooldown: 4.3,
+      maxHp: 85,
+      attackDamage: 10,   // 쿨다운 길어진 만큼 단발 데미지 소폭 상승
+      attackRange: 125,
+      attackCooldown: 1.15, // 느린 사격 — 근접이 점프로 피할 시간 확보
+      moveSpeed: 108,
+      skillDamage: 22,
+      skillSpeed: 310,
+      skillCooldown: 4.0,
       skillRadius: 10,
     ),
     preferredRange: 150,
-    approachBias: 0.42,
+    approachBias: 0.38,
     strafeBias: 1.0,
     retreatBias: 1.0,
-    skillUsageBias: 1.0,
+    skillUsageBias: 1.1,
   ),
   FighterArchetype.melee: ArchetypeDefinition(
     archetype: FighterArchetype.melee,
-    displayName: 'Blade Dash',
-    summary: 'Fast sword duelist that sticks close and cuts often.',
-    weaponLabel: 'Sword',
+    attackStyle: AttackStyle.swordSwing,
+    displayName: '검사',
+    summary: '빠른 검격으로 적에게 밀착해 싸우는 전사.',
+    weaponLabel: '검',
     colorValue: 0xFFE57373,
     baseStats: CombatStats(
-      maxHp: 92,
-      attackDamage: 16,
-      attackRange: 40,
-      attackCooldown: 0.72,
-      moveSpeed: 118,
-      skillDamage: 24,
+      maxHp: 100,
+      attackDamage: 17,   // 붙으면 강하게
+      attackRange: 50,
+      attackCooldown: 0.68,
+      moveSpeed: 122,     // 마법사보다 빠르게 — 점프+추격 가능
+      skillDamage: 28,
       skillSpeed: 260,
-      skillCooldown: 4.8,
+      skillCooldown: 4.5,
       skillRadius: 9,
     ),
-    preferredRange: 58,
+    preferredRange: 52,
     approachBias: 1.0,
-    strafeBias: 0.28,
-    retreatBias: 0.2,
-    skillUsageBias: 0.75,
+    strafeBias: 0.15,
+    retreatBias: 0.45,
+    skillUsageBias: 0.9,
   ),
   FighterArchetype.bruiser: ArchetypeDefinition(
     archetype: FighterArchetype.bruiser,
-    displayName: 'Iron Boxer',
-    summary: 'Heavy fist fighter with balanced chase and sustain.',
-    weaponLabel: 'Fist',
+    attackStyle: AttackStyle.fistSwing,
+    displayName: '격투가',
+    summary: '강력한 주먹으로 적을 압도하는 근거리 파이터.',
+    weaponLabel: '주먹',
     colorValue: 0xFFFFB74D,
     baseStats: CombatStats(
-      maxHp: 120,
-      attackDamage: 18,
-      attackRange: 48,
-      attackCooldown: 0.92,
-      moveSpeed: 96,
-      skillDamage: 30,
-      skillSpeed: 230,
-      skillCooldown: 5.3,
+      maxHp: 135,         // 체력 강화 — 맞으면서 접근하는 스타일
+      attackDamage: 25,   // 붙으면 압도
+      attackRange: 38,
+      attackCooldown: 0.88,
+      moveSpeed: 115,     // 기존 96 → 115: 투사체 피하며 접근 가능
+      skillDamage: 36,
+      skillSpeed: 240,
+      skillCooldown: 5.0,
       skillRadius: 12,
     ),
-    preferredRange: 76,
-    approachBias: 0.76,
-    strafeBias: 0.45,
-    retreatBias: 0.45,
-    skillUsageBias: 0.62,
+    preferredRange: 42,
+    approachBias: 0.9,
+    strafeBias: 0.2,
+    retreatBias: 0.35,    // 격투가는 거의 후퇴 안 함
+    skillUsageBias: 0.85,
   ),
 };
 
@@ -245,29 +252,25 @@ class BattleConfig {
 class BattleHudData {
   const BattleHudData({
     required this.round,
-    required this.playerName,
-    required this.enemyName,
+    required this.playerDefinition,
+    required this.enemyDefinition,
     required this.playerHp,
     required this.playerMaxHp,
     required this.enemyHp,
     required this.enemyMaxHp,
     required this.playerSkillReady,
     required this.enemySkillReady,
-    required this.playerWeapon,
-    required this.enemyWeapon,
   });
 
   final int round;
-  final String playerName;
-  final String enemyName;
+  final ArchetypeDefinition playerDefinition;
+  final ArchetypeDefinition enemyDefinition;
   final double playerHp;
   final double playerMaxHp;
   final double enemyHp;
   final double enemyMaxHp;
   final bool playerSkillReady;
   final bool enemySkillReady;
-  final String playerWeapon;
-  final String enemyWeapon;
 }
 
 class GameFlowController extends ChangeNotifier {
@@ -281,14 +284,17 @@ class GameFlowController extends ChangeNotifier {
   BattleConfig? currentBattle;
   List<RewardChoice> rewardChoices = <RewardChoice>[];
 
-  static const List<FighterArchetype> enemyRotation = <FighterArchetype>[
-    FighterArchetype.kiting,
-    FighterArchetype.melee,
-    FighterArchetype.bruiser,
-  ];
-
   void selectPlayerArchetype(FighterArchetype archetype) {
     playerProgress.selectArchetype(archetype);
+    notifyListeners();
+  }
+
+  void goToMenu() {
+    round = 1;
+    playerProgress.resetBonuses();
+    rewardChoices = <RewardChoice>[];
+    currentBattle = null;
+    phase = FlowPhase.menu;
     notifyListeners();
   }
 
@@ -333,8 +339,9 @@ class GameFlowController extends ChangeNotifier {
 
   BattleConfig _buildBattle(int currentRound) {
     final ArchetypeDefinition playerDefinition = playerProgress.selectedDefinition;
-    final ArchetypeDefinition enemyDefinition =
-        archetypeCatalog[enemyRotation[(currentRound - 1) % enemyRotation.length]]!;
+    final FighterArchetype enemyArchetype =
+        FighterArchetype.values[_random.nextInt(FighterArchetype.values.length)];
+    final ArchetypeDefinition enemyDefinition = archetypeCatalog[enemyArchetype]!;
     final double growth = 1 + (currentRound - 1) * 0.18;
     final double enemyAiConfidence = min(1, 0.54 + currentRound * 0.07);
     final double playerAiConfidence = 0.82;
